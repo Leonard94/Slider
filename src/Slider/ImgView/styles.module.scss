@@ -67,3 +67,7 @@ $ANIMATION_DURATION: 0.5s;
 .slideInFromLeft {
   animation: slideInFromLeft $ANIMATION_DURATION forwards;
 }
+
+.smooth {
+  transition: transform $ANIMATION_DURATION ease;
+}

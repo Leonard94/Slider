@@ -10,7 +10,7 @@ interface IProps {
   handleCloseImgView: () => void
 }
 
-const TIMER = 500
+const ANIMATION_DURATION = 500
 const TOUCH_DISTANCE_TO_CHANGE_IMG = 30
 
 enum EDirection {
@@ -30,11 +30,12 @@ export const ImgView: React.FC<IProps> = ({
   const [direction, setDirection] = useState<EDirection | null>(null)
 
   const [touchStartX, setTouchStartX] = useState<null | number>(null)
+  const [isDragging, setIsDragging] = useState(false)
   const [touchDistance, setTouchDistance] = useState<{
     current: number
     new: number
   }>({ current: 0, new: 0 })
-  const [isDragging, setIsDragging] = useState(false)
+  const [isSmooth, setIsSmooth] = useState(false)
 
   useEffect(() => {
     if (displayedImg !== currentImg && !isDragging) {
@@ -45,7 +46,7 @@ export const ImgView: React.FC<IProps> = ({
         setDisplayedImg(currentImg)
         setNewImg(undefined)
         setTransitioning(false)
-      }, TIMER)
+      }, ANIMATION_DURATION)
 
       return () => clearTimeout(timer)
     }
@@ -59,6 +60,7 @@ export const ImgView: React.FC<IProps> = ({
         !isOldImg && transitioning && direction === EDirection.next,
       [stylesRecord.slideInFromLeft]:
         !isOldImg && transitioning && direction === EDirection.prev,
+      [stylesRecord.smooth]: isSmooth && !isOldImg,
     }
 
     return cn(classes)
@@ -117,19 +119,19 @@ export const ImgView: React.FC<IProps> = ({
   const handleTouchEnd = () => {
     setTransitioning(true)
 
-    const shouldChangeImg =
-      Math.abs(touchDistance.current) > TOUCH_DISTANCE_TO_CHANGE_IMG
-
-    if (shouldChangeImg) {
-      setDisplayedImg(newImg || displayedImg)
-    }
-
-    setTouchDistance({ current: 0, new: 0 })
+    setTouchDistance({ ...touchDistance, new: 0 })
     setTouchStartX(null)
     setIsDragging(false)
 
-    setDisplayedImg(currentImg)
-    setNewImg(undefined)
+    setIsSmooth(true)
+
+    setTimeout(() => {
+      setTouchDistance({ current: 0, new: 0 })
+      setDisplayedImg(currentImg)
+      setNewImg(undefined)
+      setIsSmooth(false)
+      setTransitioning(false)
+    }, ANIMATION_DURATION)
   }
 
   return (

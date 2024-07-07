@@ -147,7 +147,7 @@ export const ImgView: React.FC<IProps> = ({
       <button
         className={styles.next}
         onClick={() => handleChangeImg(EDirection.prev)}
-        disabled={transitioning}
+        disabled={transitioning || isDragging}
       >
         prev
       </button>
@@ -189,7 +189,7 @@ export const ImgView: React.FC<IProps> = ({
       <button
         className={styles.next}
         onClick={() => handleChangeImg(EDirection.next)}
-        disabled={transitioning}
+        disabled={transitioning || isDragging}
       >
         next
       </button>

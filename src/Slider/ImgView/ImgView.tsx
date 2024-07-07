@@ -10,7 +10,8 @@ interface IProps {
   handleCloseImgView: () => void
 }
 
-const TIMER = 4000
+const TIMER = 500
+const TOUCH_DISTANCE_TO_CHANGE_IMG = 30
 
 enum EDirection {
   next = 'next',
@@ -28,8 +29,15 @@ export const ImgView: React.FC<IProps> = ({
   const [transitioning, setTransitioning] = useState(false)
   const [direction, setDirection] = useState<EDirection | null>(null)
 
+  const [touchStartX, setTouchStartX] = useState<null | number>(null)
+  const [touchDistance, setTouchDistance] = useState<{
+    current: number
+    new: number
+  }>({ current: 0, new: 0 })
+  const [isDragging, setIsDragging] = useState(false)
+
   useEffect(() => {
-    if (displayedImg !== currentImg) {
+    if (displayedImg !== currentImg && !isDragging) {
       setNewImg(currentImg)
       setTransitioning(true)
 
@@ -41,7 +49,7 @@ export const ImgView: React.FC<IProps> = ({
 
       return () => clearTimeout(timer)
     }
-  }, [displayedImg, currentImg, transitioning])
+  }, [displayedImg, currentImg, transitioning, isDragging])
 
   const stylesRecord = styles as Record<string, string>
 
@@ -67,6 +75,63 @@ export const ImgView: React.FC<IProps> = ({
     handlePrevImg()
   }
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.touches[0].clientX)
+    setIsDragging(true)
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartX !== null) {
+      const currentX = e.touches[0].clientX
+      const distance = currentX - touchStartX
+      const containerWidth = e.currentTarget.clientWidth
+
+      setTouchDistance({
+        current: distance,
+        new:
+          distance > 0
+            ? distance - containerWidth - TOUCH_DISTANCE_TO_CHANGE_IMG
+            : distance + containerWidth + TOUCH_DISTANCE_TO_CHANGE_IMG,
+      })
+
+      if (Math.abs(distance) > TOUCH_DISTANCE_TO_CHANGE_IMG && isDragging) {
+        if (touchDistance) {
+          if (touchDistance.current > 0) {
+            if (displayedImg === currentImg) {
+              handlePrevImg()
+            } else {
+              setNewImg(currentImg)
+            }
+          } else {
+            if (displayedImg === currentImg) {
+              handleNextImg()
+            } else {
+              setNewImg(currentImg)
+            }
+          }
+        }
+      }
+    }
+  }
+
+  const handleTouchEnd = () => {
+    setTransitioning(true)
+
+    const shouldChangeImg =
+      Math.abs(touchDistance.current) > TOUCH_DISTANCE_TO_CHANGE_IMG
+
+    if (shouldChangeImg) {
+      setDisplayedImg(newImg || displayedImg)
+    }
+
+    setTouchDistance({ current: 0, new: 0 })
+    setTouchStartX(null)
+    setIsDragging(false)
+
+    setDisplayedImg(currentImg)
+    setNewImg(undefined)
+  }
+
   return (
     <div className={styles.container}>
       <button className={styles.close} onClick={handleCloseImgView}>
@@ -80,9 +145,19 @@ export const ImgView: React.FC<IProps> = ({
         prev
       </button>
       <div className={styles.view}>
-        <div className={styles.view__container}>
+        <div
+          className={styles.view__container}
+          onTouchEnd={handleTouchEnd}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+        >
           <img
             className={cn(styles.image, styles.old, getAnimationClasses(true))}
+            style={{
+              transform: isDragging
+                ? `translateX(${touchDistance.current}px)`
+                : 'none',
+            }}
             src={displayedImg.img}
             alt={String(currentImg.id)}
           />
@@ -93,6 +168,11 @@ export const ImgView: React.FC<IProps> = ({
                 styles.new,
                 getAnimationClasses(false)
               )}
+              style={{
+                transform: isDragging
+                  ? `translateX(${touchDistance.new}px)`
+                  : 'none',
+              }}
               src={newImg.img}
               alt={String(currentImg.id)}
             />

@@ -80,6 +80,8 @@ export const ImgView: React.FC<IProps> = ({
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStartX(e.touches[0].clientX)
     setIsDragging(true)
+    setTransitioning(false)
+    setDirection(null)
   }
 
   const handleTouchMove = (e: React.TouchEvent) => {
@@ -96,20 +98,23 @@ export const ImgView: React.FC<IProps> = ({
             : distance + containerWidth + TOUCH_DISTANCE_TO_CHANGE_IMG,
       })
 
-      if (Math.abs(distance) > TOUCH_DISTANCE_TO_CHANGE_IMG && isDragging) {
-        if (touchDistance) {
-          if (touchDistance.current > 0) {
-            if (displayedImg === currentImg) {
-              handlePrevImg()
-            } else {
-              setNewImg(currentImg)
-            }
+      const alreadyShowNewImg =
+        Math.abs(distance) > TOUCH_DISTANCE_TO_CHANGE_IMG &&
+        isDragging &&
+        touchDistance
+
+      if (alreadyShowNewImg) {
+        if (touchDistance.current > 0) {
+          if (displayedImg === currentImg) {
+            handlePrevImg()
           } else {
-            if (displayedImg === currentImg) {
-              handleNextImg()
-            } else {
-              setNewImg(currentImg)
-            }
+            setNewImg(currentImg)
+          }
+        } else {
+          if (displayedImg === currentImg) {
+            handleNextImg()
+          } else {
+            setNewImg(currentImg)
           }
         }
       }
